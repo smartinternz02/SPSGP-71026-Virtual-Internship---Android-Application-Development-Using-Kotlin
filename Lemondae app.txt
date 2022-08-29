@@ -1,0 +1,396 @@
+Base Test
+
+
+package com.example.lemonade
+
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.drawable.Drawable
+import android.view.View
+import android.widget.ImageView
+import androidx.annotation.DrawableRes
+import androidx.core.content.ContextCompat
+import androidx.test.espresso.Espresso.onView
+import androidx.test.espresso.NoMatchingViewException
+import androidx.test.espresso.ViewInteraction
+import androidx.test.espresso.action.ViewActions.click
+import androidx.test.espresso.assertion.ViewAssertions.matches
+import androidx.test.espresso.matcher.BoundedMatcher
+import androidx.test.espresso.matcher.ViewMatchers
+import androidx.test.espresso.matcher.ViewMatchers.isDisplayed
+import androidx.test.espresso.matcher.ViewMatchers.withId
+import androidx.test.ext.junit.rules.ActivityScenarioRule
+import com.example.lemonade.DrawableMatcher.withDrawable
+import org.hamcrest.Description
+import org.hamcrest.Matcher
+import org.junit.Rule
+
+/**
+ * The lemonade app is effectively a state machine.
+ * In order to avoid stateful tests (tests that rely on previous tests),
+ * these utility methods move states and reduce code duplication.
+ * This class is meant to be inherited by the @Test methods to leverage these methods.
+ */
+open class BaseTest {
+
+    /**
+     * Test to ensure the app is in the correct state.
+     * @param textActionResource Integer for the expected text resource.
+     * @param drawableResource Integer for the expected drawable resource.
+     */
+    fun testState(textActionResource: Int, drawableResource: Int) {
+        onView(withId(R.id.text_action))
+            .check(matches(ViewMatchers.withText(textActionResource)))
+        onView(withId(R.id.image_lemon_state)).check(
+            matches(withDrawable(drawableResource)))
+    }
+
+    /**
+     * Clicks the lemon tree image.
+     */
+    fun pickLemon() {
+        onView(withDrawable(R.drawable.lemon_tree))
+            .perform(click())
+    }
+
+    /**
+     * Squeeze the lemon until the lemon image is gone.
+     * The number of clicks required is determined by a random number that the test is not
+     * aware of, so we loop and click until the image changes.
+     */
+    fun juiceLemon() {
+        while (onView(withDrawable(R.drawable.lemon_squeeze)).isPresent()) {
+            onView(withId(R.id.image_lemon_state)).perform(click())
+        }
+    }
+
+    /**
+     * Click the lemonade image.
+     */
+    fun drinkJuice() {
+        onView(withDrawable(R.drawable.lemon_drink))
+            .perform(click())
+    }
+
+    /**
+     * Click the empty glass image to restart.
+     */
+    fun restart() {
+        onView(withDrawable(R.drawable.lemon_restart))
+            .perform(click())
+    }
+
+    /**
+     * Extension function to determine if element is present.
+     * This is used to click the lemon image until it changes because the number of clicks
+     * required is determined by a random number that the test doesn't know about.
+     */
+    private fun ViewInteraction.isPresent(): Boolean {
+        return try {
+            check(matches(isDisplayed()))
+            true
+        } catch (e: NoMatchingViewException) {
+            false
+        }
+    }
+}
+
+/**
+ * Custom matcher to find drawable.
+ */
+object DrawableMatcher {
+
+    fun withDrawable(@DrawableRes resourceId: Int): Matcher<View> {
+        return object : BoundedMatcher<View, ImageView>(ImageView::class.java) {
+            override fun describeTo(description: Description?) {
+                description!!.appendText("has drawable resource $resourceId")
+            }
+
+            override fun matchesSafely(imageView: ImageView): Boolean {
+                return isSameBitmap(imageView, imageView.drawable, resourceId)
+            }
+        }
+    }
+
+    private fun isSameBitmap(item: View, drawable: Drawable?, expectedResId: Int): Boolean {
+        val image = item as ImageView
+        if (expectedResId < 0) {
+            return image.drawable == null
+        }
+        val expectedDrawable: Drawable? = ContextCompat.getDrawable(item.context, expectedResId)
+        if (drawable == null || expectedDrawable == null) {
+            return false
+        }
+        // Make tint consistent just in case they differ
+        val bitmap = getBitmap(drawable)
+        val expectedBitmap = getBitmap(expectedDrawable)
+        return bitmap.sameAs(expectedBitmap)
+    }
+
+    /**
+     * Convert vector drawable to bitmap
+     * @param drawable vector drawable
+     */
+    private fun getBitmap(drawable: Drawable): Bitmap {
+        val bitmap = Bitmap.createBitmap(
+            drawable.intrinsicWidth,
+            drawable.intrinsicHeight,
+            Bitmap.Config.ARGB_8888
+        )
+        val canvas = Canvas(bitmap)
+        drawable.setBounds(0, 0, canvas.width, canvas.height)
+        drawable.draw(canvas)
+        return bitmap
+    }
+}
+
+
+Lemonade Test
+
+
+package com.example.lemonade
+
+import androidx.test.core.app.launchActivity
+import androidx.test.espresso.Espresso.onView
+import androidx.test.espresso.action.ViewActions.click
+import androidx.test.espresso.action.ViewActions.longClick
+import androidx.test.espresso.assertion.ViewAssertions.matches
+import androidx.test.espresso.matcher.ViewMatchers.withId
+import androidx.test.espresso.matcher.ViewMatchers.withText
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.filters.LargeTest
+import org.junit.Before
+import org.junit.Test
+import org.junit.runner.RunWith
+
+/**
+ * Instrumentation tests to be run on a physical device or emulator.
+ */
+@RunWith(AndroidJUnit4::class)
+@LargeTest
+class LemonadeTests : BaseTest() {
+
+    @Before
+    fun setup() {
+        launchActivity<MainActivity>()
+    }
+
+    /**
+     * Test the view components of the pick lemon state
+     */
+    @Test
+    fun `test_initial_state`() {
+        testState(R.string.lemon_select, R.drawable.lemon_tree)
+    }
+
+    /**
+     * Test that the pick lemon functionality takes us to the "squeeze state"
+     */
+    @Test
+    fun `test_picking_lemon_proceeds_to_squeeze_state`() {
+        // Click image to progress state
+        onView(withId(R.id.image_lemon_state)).perform(click())
+        testState(R.string.lemon_squeeze, R.drawable.lemon_squeeze)
+    }
+
+    /**
+     * Test that the squeeze functionality takes us to the "drink state"
+     */
+    @Test
+    fun `test_squeezing_lemon_proceeds_to_drink_state`() {
+        // Click image to progress state
+        onView(withId(R.id.image_lemon_state)).perform(click())
+        juiceLemon()
+        testState(R.string.lemon_drink, R.drawable.lemon_drink)
+    }
+
+    /**
+     * Test squeeze count snackbar
+     */
+    @Test
+    fun `test_squeeze_count_snackbar_is_displayed`() {
+        // Click image to progress state
+        onView(withId(R.id.image_lemon_state)).perform(click())
+        // Click image to progress state
+        onView(withId(R.id.image_lemon_state)).perform(click())
+        // Click image to progress state
+        onView(withId(R.id.image_lemon_state)).perform(longClick())
+        onView(withId(com.google.android.material.R.id.snackbar_text))
+            .check(matches(withText("Squeeze count: 1, keep squeezing!")))
+    }
+
+    /**
+     * Test that the drink functionality takes us to the "restart state"
+     */
+    @Test
+    fun `test_drinking_juice_proceeds_to_restart_state`() {
+        // Click image to progress state
+        onView(withId(R.id.image_lemon_state)).perform(click())
+        juiceLemon()
+        onView(withId(R.id.image_lemon_state)).perform(click())
+        // Click image to progress state
+        testState(R.string.lemon_empty_glass, R.drawable.lemon_restart)
+    }
+
+    /**
+     * Test that the restart functionality takes us back to the "pick lemon state"
+     */
+    @Test
+    fun `test_restarting_proceeds_to_pick_lemon_state`() {
+        // Click image to progress state
+        onView(withId(R.id.image_lemon_state)).perform(click())
+        juiceLemon()
+        // Click image to progress state
+        onView(withId(R.id.image_lemon_state)).perform(click())
+        // Click image to progress state
+        onView(withId(R.id.image_lemon_state)).perform(click())
+        testState(R.string.lemon_select, R.drawable.lemon_tree)
+    }
+}
+
+
+Main Activity
+
+package com.example.lemonade
+
+import androidx.appcompat.app.AppCompatActivity
+import android.os.Bundle
+import android.widget.ImageView
+import android.widget.TextView
+import com.google.android.material.snackbar.Snackbar
+
+class MainActivity : AppCompatActivity() {
+
+    /**
+     * DO NOT ALTER ANY VARIABLE OR VALUE NAMES OR THEIR INITIAL VALUES.
+     *
+     * Anything labeled var instead of val is expected to be changed in the functions but DO NOT
+     * alter their initial values declared here, this could cause the app to not function properly.
+     */
+    private val LEMONADE_STATE = "LEMONADE_STATE"
+    private val LEMON_SIZE = "LEMON_SIZE"
+    private val SQUEEZE_COUNT = "SQUEEZE_COUNT"
+    // SELECT represents the "pick lemon" state
+    private val SELECT = "select"
+    // SQUEEZE represents the "squeeze lemon" state
+    private val SQUEEZE = "squeeze"
+    // DRINK represents the "drink lemonade" state
+    private val DRINK = "drink"
+    // RESTART represents the state where the lemonade has been drunk and the glass is empty
+    private val RESTART = "restart"
+    // Default the state to select
+    private var lemonadeState = "select"
+    // Default lemonSize to -1
+    private var lemonSize = -1
+    // Default the squeezeCount to -1
+    private var squeezeCount = -1
+
+    private var lemonTree = LemonTree()
+    private var lemonImage: ImageView? = null
+
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+
+        // === DO NOT ALTER THE CODE IN THE FOLLOWING IF STATEMENT ===
+        if (savedInstanceState != null) {
+            lemonadeState = savedInstanceState.getString(LEMONADE_STATE, "select")
+            lemonSize = savedInstanceState.getInt(LEMON_SIZE, -1)
+            squeezeCount = savedInstanceState.getInt(SQUEEZE_COUNT, -1)
+        }
+        // === END IF STATEMENT ===
+
+        lemonImage = findViewById(R.id.image_lemon_state)
+        setViewElements()
+        lemonImage!!.setOnClickListener {
+            // TODO: call the method that handles the state when the image is clicked
+        }
+        lemonImage!!.setOnLongClickListener {
+            // TODO: replace 'false' with a call to the function that shows the squeeze count
+            false
+        }
+    }
+
+    /**
+     * === DO NOT ALTER THIS METHOD ===
+     *
+     * This method saves the state of the app if it is put in the background.
+     */
+    override fun onSaveInstanceState(outState: Bundle) {
+        outState.putString(LEMONADE_STATE, lemonadeState)
+        outState.putInt(LEMON_SIZE, lemonSize)
+        outState.putInt(SQUEEZE_COUNT, squeezeCount)
+        super.onSaveInstanceState(outState)
+    }
+
+    /**
+     * Clicking will elicit a different response depending on the state.
+     * This method determines the state and proceeds with the correct action.
+     */
+    private fun clickLemonImage() {
+        // TODO: use a conditional statement like 'if' or 'when' to track the lemonadeState
+        //  when the image is clicked we may need to change state to the next step in the
+        //  lemonade making progression (or at least make some changes to the current state in the
+        //  case of squeezing the lemon). That should be done in this conditional statement
+
+        // TODO: When the image is clicked in the SELECT state, the state should become SQUEEZE
+        //  - The lemonSize variable needs to be set using the 'pick()' method in the LemonTree class
+        //  - The squeezeCount should be 0 since we haven't squeezed any lemons just yet.
+
+        // TODO: When the image is clicked in the SQUEEZE state the squeezeCount needs to be
+        //  INCREASED by 1 and lemonSize needs to be DECREASED by 1.
+        //  - If the lemonSize has reached 0, it has been juiced and the state should become DRINK
+        //  - Additionally, lemonSize is no longer relevant and should be set to -1
+
+        // TODO: When the image is clicked in the DRINK state the state should become RESTART
+
+        // TODO: When the image is clicked in the RESTART state the state should become SELECT
+
+        // TODO: lastly, before the function terminates we need to set the view elements so that the
+        //  UI can reflect the correct state
+    }
+
+    /**
+     * Set up the view elements according to the state.
+     */
+    private fun setViewElements() {
+        val textAction: TextView = findViewById(R.id.text_action)
+        // TODO: set up a conditional that tracks the lemonadeState
+
+        // TODO: for each state, the textAction TextView should be set to the corresponding string from
+        //  the string resources file. The strings are named to match the state
+
+        // TODO: Additionally, for each state, the lemonImage should be set to the corresponding
+        //  drawable from the drawable resources. The drawables have the same names as the strings
+        //  but remember that they are drawables, not strings.
+    }
+
+    /**
+     * === DO NOT ALTER THIS METHOD ===
+     *
+     * Long clicking the lemon image will show how many times the lemon has been squeezed.
+     */
+    private fun showSnackbar(): Boolean {
+        if (lemonadeState != SQUEEZE) {
+            return false
+        }
+        val squeezeText = getString(R.string.squeeze_count, squeezeCount)
+        Snackbar.make(
+            findViewById(R.id.constraint_Layout),
+            squeezeText,
+            Snackbar.LENGTH_SHORT
+        ).show()
+        return true
+    }
+}
+
+/**
+ * A Lemon tree class with a method to "pick" a lemon. The "size" of the lemon is randomized
+ * and determines how many times a lemon needs to be squeezed before you get lemonade.
+ */
+class LemonTree {
+    fun pick(): Int {
+        return (2..4).random()
+    }
+}
