@@ -1,0 +1,748 @@
+# SPSGP-71026-Virtual-Internship---Android-Application-Development-Using-Kotlin
+Virtual Internship - Android Application Development Using Kotlin
+                                          Build A Grocery Android App
+
+Gradle Scripts > build.gradle(Module:app)
+
+
+def room_version = “2.2.1”
+   def lifecycle_version = “2.0.0”
+   // Room and Architectural Components
+   implementation “androidx.room:room-runtime:$room_version”
+   implementation “androidx.legacy:legacy-support-v4:1.0.0”
+   implementation ‘androidx.lifecycle:lifecycle-extensions:2.1.0’
+   implementation ‘androidx.lifecycle:lifecycle-view model-ktx:2.1.0’
+   implementation “androidx.room:room-ktx:2.2.1”
+   kapt “androidx.room:room-compiler:$room_version”
+   // Coroutines
+   implementation ‘org.jetbrains.kotlinx:kotlinx-coroutines-core:1.3.0’
+   implementation “org.jetbrains.kotlinx:kotlinx-coroutines-android:1.3.0”
+   // New Material Design
+   implementation “com.google.android.material:material:1.0.0”
+   // ViewModel
+   implementation “androidx.lifecycle:lifecycle-extensions:$lifecycle_version”
+   implementation “androidx.lifecycle:lifecycle-viewmodel-ktx:$lifecycle_version”
+   kapt “androidx.lifecycle:lifecycle-compiler:$lifecycle_version”
+ Build.gradle(:app)
+
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+apply plugin: 'kotlin-android-extensions'
+apply plugin: 'kotlin-kapt'
+
+android {
+	compileSdkVersion 29
+	buildToolsVersion "30.0.3"
+
+	defaultConfig {
+		applicationId "com.example.grocerylist"
+		minSdkVersion 16
+		targetSdkVersion 29
+		versionCode 1
+		versionName "1.0"
+
+		testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+	}
+
+	buildTypes {
+		release {
+			minifyEnabled false
+			proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+		}
+	}
+	compileOptions {
+		sourceCompatibility = 1.8
+		targetCompatibility = 1.8
+	}
+	kotlinOptions {
+		jvmTarget = "1.8"
+	}
+}
+
+dependencies {
+	implementation fileTree(dir: 'libs', include: ['*.jar'])
+	implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+	implementation 'androidx.appcompat:appcompat:1.0.2'
+	implementation 'androidx.core:core-ktx:1.0.2'
+	implementation 'androidx.constraintlayout:constraintlayout:1.1.3'
+	testImplementation 'junit:junit:4.12'
+	androidTestImplementation 'androidx.test.ext:junit:1.1.1'
+	androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
+
+	def room_version = "2.2.1"
+	def lifecycle_version = "2.0.0"
+
+	// Room and Architectural Components
+	implementation "androidx.room:room-runtime:$room_version"
+	implementation "androidx.legacy:legacy-support-v4:1.0.0"
+	implementation 'androidx.lifecycle:lifecycle-extensions:2.1.0'
+	implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.1.0'
+	implementation "androidx.room:room-ktx:2.2.1"
+	kapt "androidx.room:room-compiler:$room_version"
+
+	// Coroutines
+	implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.3.0'
+	implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.3.0"
+
+	// New Material Design
+	implementation "com.google.android.material:material:1.0.0"
+
+	// ViewModel
+	implementation "androidx.lifecycle:lifecycle-extensions:$lifecycle_version"
+	implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:$lifecycle_version"
+	kapt "androidx.lifecycle:lifecycle-compiler:$lifecycle_version"
+}
+
+
+ Strings.xml File
+<resources>
+	<string name="app_name">Flipkart Grocery</string>
+
+	<!-- TODO: Remove or change this placeholder text -->
+	<string name="hello_blank_fragment">Hello blank fragment</string>
+	<string name="itemName">Apple</string>
+	<string name="itemQuantity">45</string>
+	<string name="itemPrice">250Rs</string>
+	<string name="totalCost">60</string>
+	<string name="totalCostTitle">Total Cost</string>
+	<string name="title">Add Items to your cart</string>
+	<string name="etItem">Item</string>
+	<string name="etQuantity">Quantity</string>
+	<string name="etPrice">Price</string>
+	<string name="save">Save</string>
+	<string name="cancel">Cancel</string>
+	</resources>
+Colors.xml File 
+
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+	<color name="colorPrimary">#0AD042</color>
+	<color name="colorPrimaryDark">#03551A</color>
+	<color name="colorAccent">#03DAC5</color>
+	<color name="black">#000000</color>
+	<color name="white">#ffffff</color>
+</resources>
+
+
+com.example.application-name ----> GroceryEntities
+
+
+package com.example.grocerylist.Database.Entity
+
+import androidx.room.ColumnInfo
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+
+// This is a data class which store data.
+// Entities class create a table in database,
+// in our database we will create three column
+
+@Entity(tableName = "grocery_items")
+
+data class GroceryItems(
+
+	// create itemName variable to
+	// store grocery items.
+	@ColumnInfo(name = "itemName")
+	var itemName: String,
+
+	// create itemQuantity variable
+	// to store grocery quantity.
+	@ColumnInfo(name = "itemQuantity")
+	var itemQuantity: Int,
+
+	// create itemPrice variable to
+	// store grocery price.
+	@ColumnInfo(name = "itemPrice")
+	var itemPrice: Int
+) {
+	// Primary key is a unique key
+	// for different database.
+	@PrimaryKey(autoGenerate = true)
+	var id: Int? = null
+}
+
+
+com.example.application-name -----> GroceryDao
+
+package com.example.grocerylist.Database
+import androidx.lifecycle.LiveData
+import androidx.room.*
+import com.example.grocerylist.Database.Entity.GroceryItems
+
+// This class is used to create
+// function for database.
+@Dao
+interface GroceryDao {
+
+	// Insert function is used to
+	// insert data in database.
+	@Insert(onConflict = OnConflictStrategy.REPLACE)
+	suspend fun insert(item: GroceryItems)
+
+	// Delete function is used to
+	// delete data in database.
+	@Delete
+	suspend fun delete(item: GroceryItems)
+
+	// getAllGroceryItems function is used to get
+	// all the data of database.
+	@Query("SELECT * FROM grocery_items")
+	fun getAllGroceryItems(): LiveData<List<GroceryItems>>
+}
+
+
+GroceryDatabase
+
+
+package com.example.grocerylist.Database
+
+import android.content.Context
+import androidx.room.Database
+import androidx.room.Room
+import androidx.room.RoomDatabase
+import com.example.grocerylist.Database.Entity.GroceryItems
+
+@Database(entities = [GroceryItems::class], version = 1)
+abstract class GroceryDatabase : RoomDatabase() {
+
+	abstract fun getGroceryDao(): GroceryDao
+
+	companion object {
+		@Volatile
+		private var instance: GroceryDatabase? = null
+		private val LOCK = Any()
+
+		operator fun invoke(context: Context) = instance ?: synchronized(LOCK) {
+			instance ?: createDatabase(context).also {
+				instance = it
+			}}
+		private fun createDatabase(context: Context) =
+			Room.databaseBuilder(context.applicationContext, GroceryDatabase::class.java, "GroceryDatabase.db").build()
+	}
+}
+
+GroceryRepository
+
+package com.example.grocerylist.Database
+
+import com.example.grocerylist.Database.Entity.GroceryItems
+
+class GroceryRepository(private val db: GroceryDatabase) {
+
+	suspend fun insert(item: GroceryItems) = db.getGroceryDao().insert(item)
+	suspend fun delete(item: GroceryItems) = db.getGroceryDao().delete(item)
+
+	fun allGroceryItems() = db.getGroceryDao().getAllGroceryItems()
+}
+
+GroceryViewModel
+
+package com.example.grocerylist.UI
+
+import androidx.lifecycle.ViewModel
+import com.example.grocerylist.Database.Entity.GroceryItems
+import com.example.grocerylist.Database.GroceryRepository
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+
+class GroceryViewModel(private val repository: GroceryRepository) : ViewModel() {
+
+	// In coroutines thread insert item in insert function.
+	fun insert(item: GroceryItems) = GlobalScope.launch {
+		repository.insert(item)
+	}
+
+	// In coroutines thread delete item in delete function.
+	fun delete(item: GroceryItems) = GlobalScope.launch {
+		repository.delete(item)
+	}
+
+	//Here we initialized allGroceryItems function with repository
+	fun allGroceryItems() = repository.allGroceryItems()
+
+}
+GroceryViewModelFactory
+
+
+package com.example.grocerylist.UI
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import com.example.grocerylist.Database.GroceryRepository
+
+class GroceryViewModelFactory(private val repository: GroceryRepository):ViewModelProvider.NewInstanceFactory() {
+
+	override fun <T : ViewModel?> create(modelClass: Class<T>): T {
+		return GroceryViewModel(repository) as T
+	}
+}
+activity_main.xml
+
+
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:app="http://schemas.android.com/apk/res-auto"
+	xmlns:tools="http://schemas.android.com/tools"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:background="#ffffff"
+	android:orientation="vertical"
+	tools:context=".UI.MainActivity">
+
+	<!-- To create a app bar with logo image. -->
+	<ImageView
+		android:id="@+id/imageView2"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:src="@drawable/logo"
+		app:layout_constraintBottom_toBottomOf="parent"
+		app:layout_constraintEnd_toEndOf="parent"
+		app:layout_constraintHorizontal_bias="0.0"
+		app:layout_constraintStart_toStartOf="parent"
+		app:layout_constraintTop_toTopOf="parent"
+		app:layout_constraintVertical_bias="0.0" />
+
+	<!-- In this image view we will add a title image -->
+	<ImageView
+		android:id="@+id/imageView"
+		android:layout_width="wrap_content"
+		android:layout_height="35dp"
+		android:src="@drawable/title"
+		app:layout_constraintBottom_toBottomOf="parent"
+		app:layout_constraintEnd_toEndOf="parent"
+		app:layout_constraintHorizontal_bias="0.497"
+		app:layout_constraintStart_toStartOf="parent"
+		app:layout_constraintTop_toBottomOf="@+id/imageView2"
+		app:layout_constraintVertical_bias="0.0" />
+
+	<!-- Recycler View to display list -->
+	<androidx.recyclerview.widget.RecyclerView
+		android:id="@+id/rvList"
+		android:layout_width="match_parent"
+		android:layout_height="470dp"
+		android:background="@color/white"
+		app:layout_constraintBottom_toBottomOf="parent"
+		app:layout_constraintEnd_toEndOf="parent"
+		app:layout_constraintHorizontal_bias="0.0"
+		app:layout_constraintStart_toStartOf="parent"
+		app:layout_constraintTop_toBottomOf="@+id/imageView"
+		app:layout_constraintVertical_bias="1.0">
+		
+	</androidx.recyclerview.widget.RecyclerView>
+
+	<!-- This button is used to open dialog box in
+		which user can enter grocery items -->
+	<Button
+		android:id="@+id/btnAdd"
+		android:layout_width="60dp"
+		android:layout_height="wrap_content"
+		android:background="@drawable/button"
+		app:layout_constraintBottom_toBottomOf="parent"
+		app:layout_constraintEnd_toEndOf="parent"
+		app:layout_constraintHorizontal_bias="0.954"
+		app:layout_constraintStart_toStartOf="parent"
+		app:layout_constraintTop_toBottomOf="@+id/imageView"
+		app:layout_constraintVertical_bias="0.969" />
+	
+</androidx.constraintlayout.widget.ConstraintLayout>
+
+
+
+Groceryadapter.xml 
+
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:app="http://schemas.android.com/apk/res-auto"
+	android:layout_width="match_parent"
+	android:layout_height="125dp"
+	android:background="@drawable/adapter1">
+
+	<!-- To display item name in recycler view -->
+	<TextView
+		android:id="@+id/txtItemName"
+		android:layout_width="0dp"
+		android:layout_height="53dp"
+		android:layout_marginTop="16dp"
+		android:layout_marginEnd="15dp"
+		android:layout_marginRight="15dp"
+		android:layout_marginBottom="17dp"
+		android:fontFamily="@font/rokkitt"
+		android:text="@string/itemName"
+		android:textColor="@color/white"
+		android:textSize="35sp"
+		app:layout_constraintBottom_toTopOf="@+id/txtTotalCostTitle"
+		app:layout_constraintEnd_toStartOf="@+id/txtItemQuantity"
+		app:layout_constraintStart_toEndOf="@+id/cbItemCheck"
+		app:layout_constraintTop_toTopOf="parent" />
+
+	<!-- To display item quantity -->
+	<TextView
+		android:id="@+id/txtItemQuantity"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:layout_marginEnd="34dp"
+		android:layout_marginRight="34dp"
+		android:layout_marginBottom="9dp"
+		android:text="@string/itemQuantity"
+		android:textColor="@color/white"
+		android:textSize="25sp"
+		app:layout_constraintBottom_toBottomOf="@+id/txtItemName"
+		app:layout_constraintEnd_toStartOf="@+id/txtItemPrice"
+		app:layout_constraintStart_toEndOf="@+id/txtItemName"
+		app:layout_constraintTop_toTopOf="parent"
+		app:layout_constraintVertical_bias="1.0" />
+
+	<!-- To display item price -->
+	<TextView
+		android:id="@+id/txtItemPrice"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:layout_marginTop="26dp"
+		android:layout_marginEnd="22dp"
+		android:layout_marginRight="22dp"
+		android:layout_marginBottom="26dp"
+		android:text="@string/itemPrice"
+		android:textColor="@color/white"
+		android:textSize="25sp"
+		android:textStyle="bold"
+		app:layout_constraintBottom_toTopOf="@+id/txtItemTotalCost"
+		app:layout_constraintEnd_toStartOf="@+id/ibDelete"
+		app:layout_constraintStart_toEndOf="@+id/txtItemQuantity"
+		app:layout_constraintTop_toTopOf="parent"
+		app:layout_constraintVertical_bias="0.0" />
+
+	<CheckBox
+		android:id="@+id/cbItemCheck"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:layout_marginStart="29dp"
+		android:layout_marginLeft="29dp"
+		android:layout_marginEnd="16dp"
+		android:layout_marginRight="16dp"
+		android:background="@color/white"
+		android:shadowColor="@color/black"
+		app:layout_constraintBaseline_toBaselineOf="@+id/txtItemName"
+		app:layout_constraintEnd_toStartOf="@+id/txtItemName"
+		app:layout_constraintStart_toStartOf="parent" />
+
+	<!-- This button is used to delete grocery item -->
+	<ImageButton
+		android:id="@+id/ibDelete"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:layout_marginEnd="26dp"
+		android:layout_marginRight="26dp"
+		android:background="@color/black"
+		android:src="@drawable/ic_action_delete"
+		app:layout_constraintBottom_toBottomOf="parent"
+		app:layout_constraintEnd_toEndOf="parent"
+		app:layout_constraintStart_toEndOf="@+id/txtItemPrice"
+		app:layout_constraintTop_toTopOf="parent"
+		app:layout_constraintVertical_bias="0.257" />
+
+	<!-- To display total cost of grocery items -->
+	<TextView
+		android:id="@+id/txtItemTotalCost"
+		android:layout_width="100dp"
+		android:layout_height="60dp"
+		android:background="@drawable/adapter2"
+		android:padding="8dp"
+		android:paddingLeft="12dp"
+		android:text="@string/totalCost"
+		android:textSize="30sp"
+		android:textStyle="bold"
+		android:visibility="invisible"
+		app:layout_constraintBottom_toBottomOf="parent"
+		app:layout_constraintEnd_toEndOf="parent"
+		app:layout_constraintStart_toEndOf="@+id/txtTotalCostTitle"
+		app:layout_constraintTop_toTopOf="@+id/txtTotalCostTitle"
+		app:layout_constraintVertical_bias="0.875" />
+
+	<!-- This text view is used to add statement for total cost -->
+	<TextView
+		android:id="@+id/txtTotalCostTitle"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:layout_marginStart="77dp"
+		android:layout_marginLeft="77dp"
+		android:layout_marginEnd="149dp"
+		android:layout_marginRight="149dp"
+		android:layout_marginBottom="16dp"
+		android:text="@string/totalCostTitle"
+		android:textColor="@color/white"
+		android:textSize="20dp"
+		android:visibility="invisible"
+		app:layout_constraintBottom_toBottomOf="parent"
+		app:layout_constraintEnd_toStartOf="@+id/txtItemTotalCost"
+		app:layout_constraintStart_toStartOf="parent" />
+	
+</androidx.constraintlayout.widget.ConstraintLayout>
+
+
+GroceryAdapter
+
+
+package com.example.grocerylist.Adapter
+
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import androidx.recyclerview.widget.RecyclerView
+import com.example.grocerylist.Database.Entity.GroceryItems
+import com.example.grocerylist.R
+import com.example.grocerylist.UI.GroceryViewModel
+import kotlinx.android.synthetic.main.groceryadapter.view.*
+
+class GroceryAdapter(var list: List<GroceryItems>, val viewModel: GroceryViewModel) :
+	RecyclerView.Adapter<GroceryAdapter.GroceryViewHolder>() {
+
+	// In this function we will add our groceryadapter.xml to kotlin class
+	override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): GroceryViewHolder {
+		val view = LayoutInflater.from(parent.context).inflate(R.layout.groceryadapter, parent, false)
+		return GroceryViewHolder(view)
+	}
+
+	// This function is used to return total number of size of list.
+	override fun getItemCount(): Int {
+		return list.size
+	}
+
+	// In onBindViewHolder we will bind our itemViews with adapter
+	override fun onBindViewHolder(holder: GroceryViewHolder, position: Int) {
+		var currentPosition = list[position]
+		holder.itemView.txtItemName.text = currentPosition.itemName
+		holder.itemView.txtItemPrice.text = "${currentPosition.itemPrice}"
+		holder.itemView.txtItemQuantity.text = "${currentPosition.itemQuantity}"
+		holder.itemView.ibDelete.setOnClickListener {
+			viewModel.delete(currentPosition)
+		}
+
+		// To get total cost
+		if (position == list.size - 1) {
+			var totalCost = 0
+			for (i in 0 until list.size) {
+				totalCost += list[i].itemPrice
+			}
+			holder.itemView.txtItemTotalCost.visibility = View.VISIBLE
+			holder.itemView.txtTotalCostTitle.visibility = View.VISIBLE
+			holder.itemView.txtItemTotalCost.text = "$totalCost"
+		}
+	}
+	// Inner class for viewHolder
+	inner class GroceryViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView)
+}
+
+
+Grocerydialog.xml
+
+
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+xmlns:android="http://schemas.android.com/apk/res/android"
+xmlns:app="http://schemas.android.com/apk/res-auto"
+android:layout_width="310dp"
+android:layout_height="250dp"
+android:background="@drawable/rectangle">
+<!-Todisplay title-->
+<TextView android:id="@+id/tvTitle"
+android:layout_width="wrap_content"
+android:layout_height="wrap_content		android:layout_marginTop="15dp"
+android:layout_marginEnd="5dp"
+android:layout_marginRight="5dp"
+android:layout_marginBottom="26dp"
+android:text="@string/title"
+android:textColor="@color/black"
+android:textSize="30dp"
+app:layout_constraintBottom_toTopOf="@+id/linearLayout"
+app:layout_constraintEnd_toEndOf="parent"
+app:layout_constraintTop_toTopOf="parent" />
+<!-- LinearLayout is used to give equal weight sum to edit text-->
+	<LinearLayout
+android:id="@+id/linearLayout"
+android:layout_width="0dp"
+android:layout_height="0dp"
+android:layout_marginBottom="66dp"
+android:weightSum="3"
+app:layout_constraintBottom_toTopOf="@+id/tvSave"
+app:layout_constraintEnd_toEndOf="parent"
+app:layout_constraintStart_toStartOf="parent"
+app:layout_constraintTop_toBottomOf="@+id/tvTitle"
+<!-- Edit Text is used to Enter Grocery
+Item Name by user-->
+<EditText
+android:id="@+id/etItemName"			android:layout_width="wrap_content"
+android:layout_height="wrap_content"
+android:layout_margin="0dp"
+android:layout_weight="1"
+android:hint="@string/etItem"
+android:textSize="30dp"
+app:layout_constraintBottom_toTopOf="@+id/tvCancel"
+app:layout_constraintEnd_toEndOf="parent"
+app:layout_constraintHorizontal_bias="0.069"
+app:layout_constraintStart_toStartOf="parent"
+app:layout_constraintTop_toTopOf="parent"
+app:layout_constraintVertical_bias="0.661" /
+><!-- Edit Text is used to Enter Grocery
+Item Quantity by user--?
+<EditText
+android:id="@+id/etItemQuantity"			android:layout_width="wrap_content"
+android:layout_height="wrap_content"
+android:layout_margin="0dp"
+android:layout_weight="1"
+android:hint="@string/etQuantity"
+android:inputType="number"
+android:textSize="30dp"
+app:layout_constraintBottom_toBottomOf="parent"
+app:layout_constraintEnd_toStartOf="@+id/etItemPrice"
+app:layout_constraintHorizontal_bias="0.461"
+app:layout_constraintStart_toEndOf="@+id/etItemName"
+app:layout_constraintTop_toBottomOf="@+id/tvTitle"
+app:layout_constraintVertical_bias="0.276" />
+<!-- Edit Text is used to Enter Grocery
+Item Price by user-->
+<EditText
+android:id="@+id/etItemPrice"
+android:layout_width="wrap_content"
+android:layout_height="wrap_content"
+android:layout_margin="0dp"
+android:layout_weight="1"
+android:hint="@string/etPrice"
+android:inputType="number"
+android:textSize="30dp"
+app:layout_constraintBottom_toBottomOf="parent"
+app:layout_constraintEnd_toEndOf="parent"
+app:layout_constraintHorizontal_bias="0.861"
+app:layout_constraintStart_toEndOf="@+id/etItemName"
+app:layout_constraintTop_toTopOf="parent" />
+</LinearLayout>
+<!-- Text view is used as save button to save all details in database by user-->
+<TextView
+android:id="@+id/tvSave"
+android:layout_width="0dp"
+android:layout_height="wrap_content"
+android:layout_marginEnd="16dp"
+android:layout_marginRight="16dp"
+android:layout_marginBottom="14dp"
+android:text="@string/save"
+android:textColor="@color/black"
+android:textSize="20dp"
+android:textStyle="bold"
+app:layout_constraintBottom_toBottomOf="parent"
+app:layout_constraintEnd_toEndOf="parent"
+app:layout_constraintStart_toEndOf="@+id/tvCancel"		app:layout_constraintTop_toBottomOf="@+id/linearLayout" />
+<!-- Text View is used to close dialog box-->
+<TextView	android:id="@+id/tvCancel"	android:layout_width="wrap_content"
+android:layout_height="wrap_content"
+android:layout_marginStart="28dp"
+android:layout_marginLeft="28dp"
+android:layout_marginEnd="154dp"
+android:layout_marginRight="154dp"
+android:layout_marginBottom="14dp"
+android:text="@string/cancel"
+android:textColor="@color/black"
+android:textSize="20dp"
+android:textStyle="bold"
+app:layout_constraintBottom_toBottomOf="parent"
+app:layout_constraintEnd_toStartOf="@+id/tvSave"
+app:layout_constraintStart_toStartOf="parent" />
+</androidx.constraintlayout.widget.ConstraintLayout>
+	
+DialogListener.kt File
+
+package com.example.grocerylist.UI
+
+import com.example.grocerylist.Database.Entity.GroceryItems
+interface DialogListener {
+// Create a function to add items
+// in GroceryItems on clicking
+fun onAddButtonClicked(item:GroceryItems)
+}
+
+GroceryItemDialog
+
+package com.example.grocerylist.UI
+
+import android.content.Context
+import android.os.Bundle
+import android.view.Window
+import android.widget.Toast
+import androidx.appcompat.app.AppCompatDialog
+import com.example.grocerylist.Database.Entity.GroceryItems
+import com.example.grocerylist.R
+import kotlinx.android.synthetic.main.grocerydialog.*
+
+class GroceryItemDialog(context: Context, var dialogListener: DialogListener) : AppCompatDialog(context) {
+override fun onCreate(savedInstanceState: Bundle?) {
+super.onCreate(savedInstanceState)
+supportRequestWindowFeature(Window.FEATURE_NO_TITLE)
+setContentView(R.layout.grocerydialog)
+// Clicklistener on Save button
+// to save all data.
+		tvSave.setOnClickListener {
+// Take all three inputs in different variables from user
+// and add it in Grocery Items database
+val name = etItemName.text.toString()
+val quantity = etItemQuantity.text.toString().toInt()
+val price = etItemPrice.text.toString().toInt()
+// Toast to display enter items in edit text
+if (name.isEmpty()) {
+Toast.makeText(context, "Please Enter Item Name", Toast.LENGTH_SHORT).show()
+}
+val item = GroceryItems(name, quantity, price)
+dialogListener.onAddButtonClicked(item)
+dismiss()	
+}
+// On click listener on cancel text to close dialog box
+tvCancel.setOnClickListener {			cancel()
+}
+}
+}
+MainActivity.kt
+package com.example.grocerylist.UI
+
+import android.os.Bundle
+import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.Observer
+import androidx.lifecycle.ViewModelProvider
+import androidx.recyclerview.widget.LinearLayoutManager
+import com.example.grocerylist.Adapter.GroceryAdapter
+import com.example.grocerylist.Database.Entity.GroceryItems
+import com.example.grocerylist.Database.GroceryDatabase
+import com.example.grocerylist.Database.GroceryRepository
+import com.example.grocerylist.R
+import kotlinx.android.synthetic.main.activity_main.*
+
+class MainActivity : AppCompatActivity() {
+lateinit var ViewModel: GroceryViewModel
+lateinit var list: List<GroceryItems>
+override fun onCreate(savedInstanceState: Bundle?) {
+super.onCreate(savedInstanceState)
+setContentView(R.layout.activity_main)
+val groceryRepository = GroceryRepository(GroceryDatabase(this))
+val factory = GroceryViewModelFactory(groceryRepository
+// Initialised View Model
+		ViewModel = ViewModelProvider(this, factory).get(GroceryViewModel::class.java)
+val groceryAdapter = GroceryAdapter(listOf(), ViewModel)
+rvList.layoutManager = LinearLayoutManager(this)
+rvList.adapter = groceryAdapter
+// To display all items in recycler view
+ViewModel.allGroceryItems().observe(this, Observer {
+groceryAdapter.list = it
+			groceryAdapter.notifyDataSetChanged()
+})
+		
+// on ClickListener on button to open dialog box
+btnAdd.setOnClickListener {
+GroceryItemDialog(this, object : DialogListener {
+override fun onAddButtonClicked(item: GroceryItems) {
+ViewModel.insert(item)
+}
+.show()
+}
+}
+}
+
+
